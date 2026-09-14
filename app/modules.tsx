@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { evidence, foods, skillLadder, type ProgramMonth } from "./fitness-data";
-import { pushupVariations, pushupWeeks } from "./pushup-data";
+import { pushupVariations, pushupWeeks, reelVariations } from "./pushup-data";
 
 function useStored<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(initial);
@@ -22,15 +22,18 @@ export function SkillsView() {
   return <><div className="eyebrow">CALISTHENICS · HANDSTAND ROADMAP</div><div className="page-heading"><div><h1>Build the line first.</h1><p>Wrist capacity, shoulder control and safe exits come before freestanding attempts.</p></div><span className="safe-badge"><ShieldCheck /> No headstands</span></div><section className="skill-hero"><div><span>CURRENT LEVEL</span><h2>{skillLadder[Math.min(completed, skillLadder.length - 1)][0]}</h2><p>{skillLadder[Math.min(completed, skillLadder.length - 1)][1]}</p></div><div><strong>{completed}<small> / {skillLadder.length}</small></strong><span>milestones complete</span></div></section><div className="skill-list">{skillLadder.map(([title, test], i) => { const locked = i > completed; const complete = !!done[i]; return <article key={title} className={`skill-step ${locked ? "locked" : ""} ${complete ? "complete" : ""}`}><button disabled={locked} aria-label={`Mark ${title} complete`} onClick={() => setDone(old => old.map((v, x) => x === i ? !v : v).concat(Array(Math.max(0, i + 1 - old.length)).fill(false)).map((v, x) => x === i ? !complete : v))}>{locked ? <LockKeyhole /> : complete ? <Check /> : <span>{i + 1}</span>}</button><div><small>{complete ? "COMPLETED" : locked ? "LOCKED" : "CURRENT"}</small><h3>{title}</h3><p>Unlock test: {test}</p></div>{!locked && !complete && <ChevronRight />}</article>})}</div><aside className="info-banner"><CircleAlert /><p><b>Stop the skill session</b> for neck pain spreading into an arm, tingling, weakness, dizziness, balance change or loss of coordination. A wall hold is never worth forcing.</p></aside></>;
 }
 
-type PushupState = { baseline: number; best: number; currentWeek: number; completed: string[] };
-const pushupStart: PushupState = { baseline: 0, best: 0, currentWeek: 1, completed: [] };
+type PushupState = { baseline: number; best: number; currentWeek: number; completed: string[]; variationDone: string[]; variationReps: Record<string, string> };
+const pushupStart: PushupState = { baseline: 0, best: 0, currentWeek: 1, completed: [], variationDone: [], variationReps: {} };
 const unlockAt = [0, 3, 3, 10, 15, 20, 25, 30, 35, 40, 50, 60];
 
 export function PushupView() {
   const [state, setState] = useStored<PushupState>("lean-pushups-v1", pushupStart);
   const week = pushupWeeks[state.currentWeek - 1];
+  const variationDone = state.variationDone ?? [];
+  const variationReps = state.variationReps ?? {};
   const workingVariation = state.baseline < 5 ? "Wall / high incline" : state.baseline < 10 ? "Low incline" : state.baseline < 15 ? "Knee + standard mix" : "Standard push-up";
   const completedThisWeek = week.sessions.filter((_, i) => state.completed.includes(`${week.week}-${i}`)).length;
+  const reelDone = reelVariations.filter(item => variationDone.includes(item.id)).length;
   const setNumber = (key: "baseline" | "best", value: number) => setState(old => ({ ...old, [key]: Math.max(0, Math.round(value || 0)) }));
   return <>
     <div className="eyebrow">12-WEEK PUSH-UP MISSION · GOAL: 100 CONTINUOUS</div>
@@ -42,6 +45,11 @@ export function PushupView() {
       <div><Clock3/><span>CURRENT BLOCK</span><strong>Week {week.week} · {week.phase}</strong><small>{completedThisWeek}/{week.sessions.length} sessions done</small></div>
     </section>
     <aside className="info-banner"><ShieldCheck/><p><b>Use this as your push training—not extra daily punishment.</b> Keep at least 48 hours between hard sessions, keep the neck neutral, and stop for radiating pain, tingling, weakness, dizziness or loss of form. Reaching 100 in 12 weeks is a goal, not a guarantee.</p></aside>
+    <section className="reel-circuit">
+      <div className="section-title"><div><span className="reel-label">REFERENCE-SEQUENCE SKILLS</span><h2>Seven variations from your screenshots</h2></div><strong>{reelDone}/{reelVariations.length} learned</strong></div>
+      <p className="reel-intro">The reel counts are technique samples, not a workout prescription. Unlock the variation in its listed week, practise it fresh, and record only clean reps.</p>
+      <div className="reel-variation-grid">{reelVariations.map((item, i) => { const done = variationDone.includes(item.id); const available = state.currentWeek >= item.startWeek; return <article key={item.id} className={`${done ? "done" : ""} ${available ? "available" : "locked"}`}><div className="variation-top"><span>{String(i + 1).padStart(2, "0")}</span><small>FROM WEEK {item.startWeek}</small><button disabled={!available} aria-label={`Mark ${item.name} learned`} onClick={() => setState(old => ({ ...old, variationDone: done ? (old.variationDone ?? []).filter(x => x !== item.id) : [...(old.variationDone ?? []), item.id] }))}>{available ? done ? <Check/> : "Mark" : <LockKeyhole/>}</button></div><h3>{item.name}</h3><b>{item.focus}</b><p>{item.cue}</p><div className="variation-log"><span>Reel: {item.reelTarget}</span><label>My clean reps <input inputMode="numeric" value={variationReps[item.id] ?? ""} placeholder="0" onChange={e => setState(old => ({ ...old, variationReps: { ...(old.variationReps ?? {}), [item.id]: e.target.value } }))}/></label></div><small className="variation-safety"><ShieldCheck/> {item.safety}</small></article>})}</div>
+    </section>
     <div className="pushup-layout">
       <section>
         <div className="section-title"><h2>Your 12-week path</h2><span>Tap a week to open it</span></div>

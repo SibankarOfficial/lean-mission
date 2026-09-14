@@ -6,6 +6,26 @@ export type PushupWeek = {
   sessions: { name: string; prescription: string; note: string }[];
 };
 
+export type ReelVariation = {
+  id: string;
+  name: string;
+  reelTarget: string;
+  startWeek: number;
+  focus: string;
+  cue: string;
+  safety: string;
+};
+
+export const reelVariations: ReelVariation[] = [
+  { id: "normal", name: "Normal", reelTarget: "3 reps", startWeek: 1, focus: "Chest", cue: "Hands just outside the chest; ribs, hips and head move as one line.", safety: "Use an incline if the floor version changes your neck position." },
+  { id: "wide", name: "Wide", reelTarget: "3 reps", startWeek: 3, focus: "Chest + shoulders", cue: "Move each hand only one palm-width wider than normal; keep elbows diagonally back.", safety: "Reduce width or use an incline if the front of the shoulder pinches." },
+  { id: "diamond", name: "Diamond", reelTarget: "3 reps", startWeek: 5, focus: "Triceps", cue: "Hands close under the chest; a small triangle is enough—do not force the thumbs together.", safety: "Use close-grip incline push-ups if wrists or elbows feel strained." },
+  { id: "fist", name: "Fist", reelTarget: "3 reps", startWeek: 6, focus: "Chest + triceps + wrist control", cue: "Use two firm fists on a padded, non-slip surface; keep wrists straight.", safety: "Optional. Skip for knuckle, wrist or hand pain; never use a hard slippery floor." },
+  { id: "hindu", name: "Modified Hindu", reelTarget: "2 reps", startWeek: 8, focus: "Upper body + flexibility", cue: "Glide through a comfortable range and return with control; keep the gaze down-forward.", safety: "Cervical-safe modification: no forced head lift or deep neck extension." },
+  { id: "archer-left", name: "Archer Left", reelTarget: "3 reps", startWeek: 10, focus: "Chest + triceps + shoulder control", cue: "Shift toward the left working arm while the right arm stays long; begin on an incline.", safety: "Keep both hands planted and shorten the range before attempting the floor." },
+  { id: "archer-right", name: "Archer Right", reelTarget: "4–5 reps", startWeek: 10, focus: "Chest + triceps + shoulder control", cue: "Mirror the left side and match control before adding reps.", safety: "Do not chase the reel count if the two sides are uneven or painful." },
+];
+
 const phase = (week: number) => week <= 4 ? "Foundation" : week <= 8 ? "Capacity" : "100-rep preparation";
 
 export const pushupWeeks: PushupWeek[] = [
@@ -31,13 +51,13 @@ export const pushupWeeks: PushupWeek[] = [
   ]},
   { week: 5, phase: phase(5), focus: "Build triceps strength with close-grip work", sessions: [
     { name: "A · Standard volume", prescription: "6 × 45%", note: "90 sec rest." },
-    { name: "B · Close-grip / diamond", prescription: "4 × 4–8", note: "Use incline close-grip if wrists or elbows object." },
+    { name: "B · Diamond technique", prescription: "4 × 3–6", note: "Small hand triangle; use close-grip incline if wrists or elbows object." },
     { name: "C · EMOM", prescription: "12 min · 35% each minute", note: "Switch to incline as needed." },
     { name: "D · Recovery", prescription: "3 × 8 incline + scapular push-up", note: "Easy movement quality." },
   ]},
-  { week: 6, phase: phase(6), focus: "Staggered stance and anti-rotation control", sessions: [
+  { week: 6, phase: phase(6), focus: "Fist push-up setup and wrist control", sessions: [
     { name: "A · Standard", prescription: "5 × 50%", note: "Keep hips and head aligned." },
-    { name: "B · Staggered", prescription: "3 × 5/side", note: "Small hand offset first." },
+    { name: "B · Fist technique", prescription: "3 × 3 on padding", note: "Optional; straight wrists, stable fists, stop for hand or knuckle pain." },
     { name: "C · Ladder", prescription: "3–5–7 × 3 rounds", note: "Reduce rung size if grindy." },
     { name: "D · Incline flush", prescription: "40 total easy reps", note: "Break into any clean sets." },
   ]},
@@ -49,7 +69,7 @@ export const pushupWeeks: PushupWeek[] = [
   ]},
   { week: 8, phase: phase(8), focus: "Deload, then assess halfway capacity", test: "One clean max set; if below Week 4, repeat Weeks 5–7 with 15% less volume.", sessions: [
     { name: "A · Deload", prescription: "4 × 30–35%", note: "Fast, easy reps." },
-    { name: "B · Technique", prescription: "3 easy variation rounds", note: "No advanced work." },
+    { name: "B · Modified Hindu technique", prescription: "3 × 2–4", note: "Comfortable range; no forced neck extension." },
     { name: "C · Re-test", prescription: "Warm up + one max set", note: "No second attempt." },
   ]},
   { week: 9, phase: phase(9), focus: "Higher total volume without daily maxing", sessions: [
@@ -60,7 +80,7 @@ export const pushupWeeks: PushupWeek[] = [
   ]},
   { week: 10, phase: phase(10), focus: "Assisted archer control; endurance stays primary", sessions: [
     { name: "A · Standard", prescription: "6 × 50%", note: "Quality first." },
-    { name: "B · Assisted archer", prescription: "4 × 3–5/side", note: "Use a high surface and short range." },
+    { name: "B · Archer left + right", prescription: "4 × 3–5/side", note: "Use a high surface and short range; match both sides." },
     { name: "C · Ladder", prescription: "5–10–15, repeat sustainably", note: "Regression permitted on later rounds." },
     { name: "D · Long-set practice", prescription: "1 × 70–80% max + 4 back-off sets", note: "Not a max test." },
   ]},
