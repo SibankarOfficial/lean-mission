@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BarChart3, Calculator, Check, ChevronRight, Dumbbell, Footprints, Moon, Pause, Play, Settings, ShieldCheck, Sparkles, Target, Timer, Utensils, Waves } from "lucide-react";
+import { Activity, BarChart3, Calculator, Check, ChevronRight, Dumbbell, Footprints, Moon, Pause, Play, Settings, ShieldCheck, Sparkles, Target, Timer, TrendingUp, Utensils, Waves } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { createMonth, type ProgramMonth } from "./fitness-data";
-import { CalculatorView, DietView, ProgressView, RecoveryView, SafetyView, SettingsView, SkillsView } from "./modules";
+import { CalculatorView, DietView, ProgressView, PushupView, RecoveryView, SafetyView, SettingsView, SkillsView } from "./modules";
 
 type SetLog = { reps: string; rir: number; tempo: string; variation: string };
 type DailyLog = { steps: number; water: number; sleep: number; calories: number; protein: number; weight?: number; energy: number; soreness: number; neck: number; notes: string; completed: string[]; sets: Record<string, SetLog> };
@@ -71,6 +71,7 @@ export default function Home() {
             <TabsTrigger value="today"><Target /> Today</TabsTrigger>
             <TabsTrigger value="plan"><Dumbbell /> 30-Day Plan</TabsTrigger>
             <TabsTrigger value="skills"><Sparkles /> Skills</TabsTrigger>
+            <TabsTrigger value="pushups"><TrendingUp /> Push-ups</TabsTrigger>
             <TabsTrigger value="diet"><Utensils /> Diet</TabsTrigger>
             <TabsTrigger value="recovery"><Waves /> Recovery</TabsTrigger>
             <TabsTrigger value="calculator"><Calculator /> Calculators</TabsTrigger>
@@ -110,12 +111,13 @@ export default function Home() {
           <TabsContent value="plan"><div className="eyebrow">{activeMonth.name.toUpperCase()} · {activeMonth.phase.toUpperCase()}</div><div className="page-heading"><div><h1>Your 30-day map</h1><p>Volume rises gradually, with recovery and a lighter finish built in.</p></div></div><div className="day-grid">{activeMonth.days.map(day => { const complete = (state.logs[`${activeMonth.id}-${day.day}`]?.completed.length ?? 0) >= day.exercises.length; return <button key={day.day} className={`day-card ${day.day === today.day ? "current" : ""}`} onClick={() => { setState(s => ({ ...s, currentDay: day.day })); setTab("today"); }}><span>DAY {day.day}</span>{complete && <Check />}<h3>{day.type}</h3><p>{day.exercises.length} moves · {day.stepTarget.toLocaleString()} steps</p>{day.checkpoint && <small>Weekly checkpoint</small>}</button>})}</div></TabsContent>
 
           <TabsContent value="skills"><SkillsView/></TabsContent>
+          <TabsContent value="pushups"><PushupView/></TabsContent>
           <TabsContent value="diet"><DietView/></TabsContent>
           <TabsContent value="recovery"><RecoveryView/></TabsContent>
           <TabsContent value="calculator"><CalculatorView/></TabsContent>
           <TabsContent value="progress"><ProgressView months={state.months} logs={state.logs}/></TabsContent>
           <TabsContent value="safety"><SafetyView/></TabsContent>
-          <TabsContent value="settings"><SettingsView dark={state.dark} safeMode={state.safeMode} monthCount={state.months.length} onDark={v=>setState(s=>({...s,dark:v}))} onSafe={v=>setState(s=>({...s,safeMode:v}))} onBuildMonth={()=>setState(s=>({...s,months:[...s.months,createMonth(s.months.length+1)],currentDay:1}))} onReset={()=>{["lean-mission-v1","lean-skills-v1","lean-foods-v1","lean-profile-v1"].forEach(k=>localStorage.removeItem(k));setState(initial);setTab("dashboard")}}/></TabsContent>
+          <TabsContent value="settings"><SettingsView dark={state.dark} safeMode={state.safeMode} monthCount={state.months.length} onDark={v=>setState(s=>({...s,dark:v}))} onSafe={v=>setState(s=>({...s,safeMode:v}))} onBuildMonth={()=>setState(s=>({...s,months:[...s.months,createMonth(s.months.length+1)],currentDay:1}))} onReset={()=>{["lean-mission-v1","lean-skills-v1","lean-pushups-v1","lean-foods-v1","lean-profile-v1"].forEach(k=>localStorage.removeItem(k));setState(initial);setTab("dashboard")}}/></TabsContent>
         </section>
       </Tabs>
     </main>

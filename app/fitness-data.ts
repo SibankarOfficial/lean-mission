@@ -125,6 +125,17 @@ export const foods = [
   { name: "Boiled chola (1 cup)", kcal: 269, protein: 15, carbs: 45, fat: 4, fibre: 12 },
   { name: "Roti (2 medium)", kcal: 220, protein: 7, carbs: 44, fat: 3, fibre: 6 },
   { name: "Cooking oil (1 tsp / 5 ml)", kcal: 45, protein: 0, carbs: 0, fat: 5, fibre: 0 },
+  { name: "Soyabean curry (1 cup, oil separate)", kcal: 220, protein: 16, carbs: 22, fat: 8, fibre: 7 },
+  { name: "Paneer curry (1 cup, home-style)", kcal: 360, protein: 18, carbs: 14, fat: 26, fibre: 2 },
+  { name: "Chicken + soy + mixed-veg stew (25 g each, no oil)", kcal: 140, protein: 15, carbs: 11, fat: 4, fibre: 3 },
+  { name: "Milk tea with sugar (1 cup)", kcal: 95, protein: 3, carbs: 14, fat: 3, fibre: 0 },
+  { name: "Black coffee, unsweetened (1 cup)", kcal: 3, protein: 0, carbs: 1, fat: 0, fibre: 0 },
+  { name: "Banana (1 medium)", kcal: 105, protein: 1, carbs: 27, fat: 0, fibre: 3 },
+  { name: "Guava (1 medium / ~100 g)", kcal: 68, protein: 3, carbs: 14, fat: 1, fibre: 5 },
+  { name: "Fresh fruit (1 serving)", kcal: 80, protein: 1, carbs: 20, fat: 0, fibre: 3 },
+  { name: "Toned milk (250 ml)", kcal: 145, protein: 8, carbs: 12, fat: 8, fibre: 0 },
+  { name: "Plain dahi (100 g)", kcal: 61, protein: 4, carbs: 5, fat: 3, fibre: 0 },
+  { name: "Isabgol (1 tsp with warm water)", kcal: 20, protein: 0, carbs: 5, fat: 0, fibre: 5 },
 ];
 
 export const skillLadder = [
