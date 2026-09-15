@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { createMonth, type ProgramMonth } from "./fitness-data";
 import { CalculatorView, DietView, ProgressView, PushupView, RecoveryView, SafetyView, SettingsView, SkillsView } from "./modules";
+import { AuthGate } from "./auth-gate";
 
 type SetLog = { reps: string; rir: number; tempo: string; variation: string };
 type DailyLog = { steps: number; water: number; sleep: number; calories: number; protein: number; weight?: number; energy: number; soreness: number; neck: number; notes: string; completed: string[]; sets: Record<string, SetLog> };
@@ -54,6 +55,7 @@ export default function Home() {
   }, [activeMonth.month, dayPct, today.day, today.exercises, today.stepTarget, today.type]);
 
   return (
+    <AuthGate>
     <main className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => setTab("dashboard")}><span className="brand-mark"><Activity /></span><span><b>Lean Mission</b><small>Strength · Skills · Health</small></span></button>
@@ -121,5 +123,6 @@ export default function Home() {
         </section>
       </Tabs>
     </main>
+    </AuthGate>
   );
 }
