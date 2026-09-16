@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, BarChart3, Calculator, Check, ChevronRight, Dumbbell, Footprints, Moon, Pause, Play, Settings, ShieldCheck, Sparkles, Target, Timer, TrendingUp, Utensils, Waves } from "lucide-react";
+import { Activity, BarChart3, Calculator, Check, ChevronRight, Dumbbell, Footprints, LogOut, Moon, Pause, Play, Settings, ShieldCheck, Sparkles, Target, Timer, TrendingUp, Utensils, Waves } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createMonth, type ProgramMonth } from "./fitness-data";
 import { CalculatorView, DietView, ProgressView, PushupView, RecoveryView, SafetyView, SettingsView, SkillsView } from "./modules";
-import { AuthGate } from "./auth-gate";
+import { AuthGate, type FitnessProfile, useAuth } from "./auth-gate";
 
 type SetLog = { reps: string; rir: number; tempo: string; variation: string };
 type DailyLog = { steps: number; water: number; sleep: number; calories: number; protein: number; weight?: number; energy: number; soreness: number; neck: number; notes: string; completed: string[]; sets: Record<string, SetLog> };
@@ -25,10 +26,24 @@ function Metric({ icon, label, value, detail }: { icon: React.ReactNode; label: 
   return <article className="metric-card"><div className="metric-icon">{icon}</div><div><p>{label}</p><strong>{value}</strong><span>{detail}</span></div></article>;
 }
 
-export default function Home() {
+function AccountSettings({ open, onOpenChange, dark, safeMode, onDark, onSafe }: { open: boolean; onOpenChange: (open: boolean) => void; dark: boolean; safeMode: boolean; onDark: (value: boolean) => void; onSafe: (value: boolean) => void }) {
+  const { user, profile, saveProfile, signOut } = useAuth();
+  const [form, setForm] = useState<FitnessProfile>(profile);
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => setForm(profile), [profile, open]);
+  const set = (key: keyof FitnessProfile, value: string) => setForm(current => ({ ...current, [key]: value }));
+  const save = async (event: React.FormEvent) => { event.preventDefault(); setSaving(true); setMessage(""); const error = await saveProfile(form); setSaving(false); setMessage(error ?? "Profile saved."); };
+  const initials = (profile.fullName || user.email || "U").split(/\s|@/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="right" className="account-sheet"><SheetHeader><span className="account-avatar-large">{initials}</span><SheetTitle>Account settings</SheetTitle><SheetDescription>{user.email}</SheetDescription></SheetHeader><div className="account-sheet-body"><form onSubmit={save}><h3>Profile</h3><label>Full name<input required value={form.fullName} onChange={e => set("fullName", e.target.value)} /></label><div className="account-grid"><label>Age<input type="number" min="13" max="100" value={form.age} onChange={e => set("age", e.target.value)} /></label><label>Weight (kg)<input type="number" min="30" max="300" step=".1" value={form.weightKg} onChange={e => set("weightKg", e.target.value)} /></label></div><div className="account-grid"><label>Height (cm)<input type="number" min="100" max="250" value={form.heightCm} onChange={e => set("heightCm", e.target.value)} /></label><label>Waist (in)<input type="number" min="15" max="80" step=".1" value={form.waistIn} onChange={e => set("waistIn", e.target.value)} /></label></div><label>Primary goal<select value={form.goal} onChange={e => set("goal", e.target.value)}><option value="fat_loss">Fat loss</option><option value="strength">Strength</option><option value="calisthenics">Calisthenics skills</option><option value="general_health">General health</option></select></label><button className="auth-submit" disabled={saving}>{saving ? "Saving…" : "Save profile"}</button>{message && <p className="account-message">{message}</p>}</form><div className="account-preferences"><h3>App preferences</h3><div><span><b>Dark mode</b><small>Use the darker colour theme</small></span><Switch checked={dark} onCheckedChange={onDark} /></div><div><span><b>Cervical Safe</b><small>Replace higher-risk movements</small></span><Switch checked={safeMode} onCheckedChange={onSafe} /></div></div><button className="account-logout" onClick={() => void signOut()}><LogOut /> Log out</button></div></SheetContent></Sheet>;
+}
+
+function AppContent() {
+  const { user, profile } = useAuth();
   const [state, setState] = useState<AppState>(initial);
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState("dashboard");
+  const [accountOpen, setAccountOpen] = useState(false);
   const [timer, setTimer] = useState(90);
   const [timerRunning, setTimerRunning] = useState(false);
   useEffect(() => { const saved = localStorage.getItem("lean-mission-v1"); if (saved) { try { const parsed=JSON.parse(saved); setState({ ...initial, ...parsed, months: parsed.months?.length ? parsed.months : initial.months }); } catch {} } setReady(true); }, []);
@@ -55,11 +70,10 @@ export default function Home() {
   }, [activeMonth.month, dayPct, today.day, today.exercises, today.stepTarget, today.type]);
 
   return (
-    <AuthGate>
     <main className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => setTab("dashboard")}><span className="brand-mark"><Activity /></span><span><b>Lean Mission</b><small>Strength · Skills · Health</small></span></button>
-        <div className="header-actions"><span className="phase-pill"><Sparkles size={15} /> {activeMonth.phase}</span><button className="avatar" aria-label="Personal profile">SD</button></div>
+        <div className="header-actions"><span className="phase-pill"><Sparkles size={15} /> {activeMonth.phase}</span><button className="avatar" aria-label="Open account settings" onClick={() => setAccountOpen(true)}>{(profile.fullName || user.email || "U").split(/\s|@/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase()}</button></div>
       </header>
 
       <Tabs value={tab} onValueChange={setTab} className="workspace">
@@ -122,7 +136,9 @@ export default function Home() {
           <TabsContent value="settings"><SettingsView dark={state.dark} safeMode={state.safeMode} monthCount={state.months.length} onDark={v=>setState(s=>({...s,dark:v}))} onSafe={v=>setState(s=>({...s,safeMode:v}))} onBuildMonth={()=>setState(s=>({...s,months:[...s.months,createMonth(s.months.length+1)],currentDay:1}))} onReset={()=>{["lean-mission-v1","lean-skills-v1","lean-pushups-v1","lean-foods-v1","lean-profile-v1"].forEach(k=>localStorage.removeItem(k));setState(initial);setTab("dashboard")}}/></TabsContent>
         </section>
       </Tabs>
+      <AccountSettings open={accountOpen} onOpenChange={setAccountOpen} dark={state.dark} safeMode={state.safeMode} onDark={v => setState(s => ({ ...s, dark: v }))} onSafe={v => setState(s => ({ ...s, safeMode: v }))} />
     </main>
-    </AuthGate>
   );
 }
+
+export default function Home() { return <AuthGate><AppContent /></AuthGate>; }
