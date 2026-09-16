@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createMonth, type ProgramMonth } from "./fitness-data";
-import { CalculatorView, CreatePlanView, DietView, ProgressView, PushupView, RecoveryView, SafetyView, SettingsView, SkillsView, YourPlansView } from "./modules";
+import { CalculatorView, CreatePlanView, DietView, ExercisesView, MasteryView, ProgressView, RecoveryView, SafetyView, SettingsView, WorkoutsView, YourPlansView } from "./modules";
 import { AuthGate, type FitnessProfile, useAuth } from "./auth-gate";
 
 type SetLog = { reps: string; rir: number; tempo: string; variation: string };
@@ -87,8 +87,9 @@ function AppContent() {
             <TabsTrigger value="today"><Target /> Today</TabsTrigger>
             <TabsTrigger value="plans"><Dumbbell /> Your Plans</TabsTrigger>
             <TabsTrigger value="create-plan"><Sparkles /> Create Plan</TabsTrigger>
-            <TabsTrigger value="skills"><Sparkles /> Skills</TabsTrigger>
-            <TabsTrigger value="pushups"><TrendingUp /> Push-ups</TabsTrigger>
+            <TabsTrigger value="mastery"><TrendingUp /> Mastery</TabsTrigger>
+            <TabsTrigger value="workouts"><Dumbbell /> Workouts</TabsTrigger>
+            <TabsTrigger value="exercises"><Target /> Exercises</TabsTrigger>
             <TabsTrigger value="diet"><Utensils /> Diet</TabsTrigger>
             <TabsTrigger value="recovery"><Waves /> Recovery</TabsTrigger>
             <TabsTrigger value="calculator"><Calculator /> Calculators</TabsTrigger>
@@ -128,8 +129,9 @@ function AppContent() {
           <TabsContent value="plans"><YourPlansView onCreate={() => setTab("create-plan")} /></TabsContent>
           <TabsContent value="create-plan"><CreatePlanView onCreated={() => setTab("plans")} /></TabsContent>
 
-          <TabsContent value="skills"><SkillsView/></TabsContent>
-          <TabsContent value="pushups"><PushupView/></TabsContent>
+          <TabsContent value="mastery"><MasteryView/></TabsContent>
+          <TabsContent value="workouts"><WorkoutsView/></TabsContent>
+          <TabsContent value="exercises"><ExercisesView/></TabsContent>
           <TabsContent value="diet"><DietView/></TabsContent>
           <TabsContent value="recovery"><RecoveryView/></TabsContent>
           <TabsContent value="calculator"><CalculatorView/></TabsContent>

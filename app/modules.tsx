@@ -151,3 +151,44 @@ export function CreatePlanView({ onCreated }: { onCreated: () => void }) {
   const removeFocus = (dayIndex: number, focus: string) => setSchedule(current => current.map((day, index) => index === dayIndex ? day.filter(item => item !== focus) : day));
   return <><div className="eyebrow">PLAN BUILDER · STEP 1 OF 2</div><div className="page-heading"><div><h1>Create a training plan.</h1><p>First choose the calendar and weekly structure. We&apos;ll add the exact exercises inside each day next.</p></div></div><section className="plan-builder"><div className="plan-mode-toggle"><button className={mode === "template" ? "active" : ""} onClick={() => setMode("template")}><Sparkles /><span><b>Use a pre-built plan</b><small>Start from a proven structure</small></span></button><button className={mode === "custom" ? "active" : ""} onClick={() => setMode("custom")}><CalendarDays /><span><b>Customize my week</b><small>Choose the muscle focus for every day</small></span></button></div><div className="plan-basics"><label>Plan name <input value={name} onChange={e => setName(e.target.value)} placeholder={mode === "template" ? selectedTemplate[1] : "e.g. My strength block"} /></label><label>Duration <select value={duration} onChange={e => setDuration(+e.target.value as 1 | 2 | 3)}><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option></select></label><label>Start date <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></label></div>{mode === "template" ? <div className="template-picker"><h2>Choose a plan type</h2><p>Each one gives you a ready-made weekly rhythm. You can tune exercises later.</p><div>{planTemplates.map(item => <button key={item[0]} className={template === item[0] ? "selected" : ""} onClick={() => setTemplate(item[0])}><span><b>{item[1]}</b><small>{item[2]}</small></span>{template === item[0] && <Check />}</button>)}</div></div> : <div className="weekly-customizer"><div className="section-title"><div><h2>Build your weekly split</h2><span>Add one or more muscle focuses to a day</span></div></div>{weekdays.map((day, index) => <div className="custom-day" key={day}><b>{day}</b><div><div className="focus-tags">{schedule[index].map(focus => <span key={focus}>{focus}<button aria-label={`Remove ${focus} from ${day}`} onClick={() => removeFocus(index, focus)}><X /></button></span>)}</div><div className="focus-add"><select defaultValue=""><option value="" disabled>Select focus</option>{focusOptions.filter(focus => !schedule[index].includes(focus)).map(focus => <option key={focus}>{focus}</option>)}</select><button onClick={event => { const select = event.currentTarget.previousElementSibling as HTMLSelectElement; addFocus(index, select.value); select.value = ""; }}><Plus /> Add</button></div></div></div>)}</div>}<div className="plan-builder-footer"><span><CalendarDays /> Starts {formatDate(startDate)} · {duration} {duration === 1 ? "month" : "months"}</span><button className="primary" onClick={save}>Create plan <ChevronRight /></button></div></section></>;
 }
+
+const masteryPlans = [
+  { id: "ppl-bodyweight", name: "Push · Pull · Legs", detail: "Bodyweight strength foundation", rhythm: ["Push", "Pull", "Legs", "Recovery", "Push", "Pull", "Rest"] },
+  { id: "ppl-dumbbell", name: "Dumbbell PPL", detail: "Balanced strength with dumbbells", rhythm: ["Push", "Pull", "Legs", "Recovery", "Push", "Pull", "Rest"] },
+  { id: "fat-loss", name: "Fat-loss foundation", detail: "Strength, steps and sustainable cardio", rhythm: ["Full body", "Cardio", "Upper", "Recovery", "Lower", "Cardio", "Rest"] },
+  { id: "calisthenics", name: "Calisthenics mastery", detail: "Skills, strength and body control", rhythm: ["Push", "Pull", "Legs", "Skills", "Upper", "Full body", "Rest"] },
+  { id: "pushup", name: "Push-up mastery", detail: "Progress toward one high-rep set", rhythm: ["Technique", "Rest", "Volume", "Rest", "Strength", "Recovery", "Rest"] },
+];
+
+function PlanDetail({ name, detail, rhythm, onBack }: { name: string; detail: string; rhythm: string[]; onBack: () => void }) {
+  return <><button className="back-button" onClick={onBack}>← Back to library</button><div className="skill-hero"><div><span>PROGRAM OVERVIEW</span><h2>{name}</h2><p>{detail}. Choose this programme when you are ready; exercises and daily prescriptions are added in the next step.</p></div><div><strong>7<small> days</small></strong><span>weekly rhythm</span></div></div><section className="program-week"><div className="section-title"><h2>Weekly rhythm</h2><span>Repeat and progress</span></div>{rhythm.map((focus, index) => <article key={`${focus}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><small>{weekdays[index].toUpperCase()}</small><h3>{focus}</h3><p>Exercise choices and progression will appear here.</p></div><ChevronRight /></article>)}</section></>;
+}
+
+export function MasteryView() {
+  const [selected, setSelected] = useState<string | null>(null);
+  const plan = masteryPlans.find(item => item.id === selected);
+  if (plan) return <PlanDetail {...plan} onBack={() => setSelected(null)} />;
+  return <><div className="eyebrow">PRE-BUILT PROGRAMS</div><div className="page-heading"><div><h1>Mastery paths.</h1><p>Choose a proven structure when you want the app to guide the weekly rhythm.</p></div></div><div className="mastery-grid">{masteryPlans.map((item, index) => <button key={item.id} onClick={() => setSelected(item.id)}><span>{String(index + 1).padStart(2, "0")}</span><h2>{item.name}</h2><p>{item.detail}</p><small>Open programme <ChevronRight /></small></button>)}</div></>;
+}
+
+export function WorkoutsView() {
+  const [plans] = usePlans();
+  const [selected, setSelected] = useState<string | null>(null);
+  const customPlans = plans.filter(plan => plan.mode === "custom");
+  const plan = customPlans.find(item => item.id === selected);
+  if (plan) return <PlanDetail name={plan.name} detail={`Starts ${formatDate(plan.startDate)} · ${plan.duration} month${plan.duration === 1 ? "" : "s"}`} rhythm={plan.schedule.map(day => (Array.isArray(day) ? day : [day]).join(" + "))} onBack={() => setSelected(null)} />;
+  return <><div className="eyebrow">YOUR CUSTOM PROGRAMS</div><div className="page-heading"><div><h1>Workouts.</h1><p>Your own weekly muscle splits live here. One day can carry more than one focus.</p></div></div>{customPlans.length === 0 ? <section className="plans-empty"><Dumbbell /><h2>No custom workout yet.</h2><p>Create a plan, choose “Customize my week,” then add focus tags to each day.</p></section> : <div className="skill-list">{customPlans.map(plan => <article className="skill-step" key={plan.id}><button aria-label={`Open ${plan.name}`} onClick={() => setSelected(plan.id)}><Dumbbell /></button><div><small>STARTS {formatDate(plan.startDate).toUpperCase()}</small><h3>{plan.name}</h3><p>{plan.duration} month{plan.duration === 1 ? "" : "s"} · {plan.schedule.flat().filter(Boolean).slice(0, 4).join(" · ")}</p></div><button className="library-open" onClick={() => setSelected(plan.id)}><ChevronRight /></button></article>)}</div>}</>;
+}
+
+const exerciseLibrary = [
+  ["Push-up", "Chest · triceps · shoulders", "Used in Push-up Mastery, Push days and chest-focused custom workouts."],
+  ["Row", "Back · biceps", "Used in Pull days and back-focused custom workouts."],
+  ["Squat", "Quads · glutes · core", "Used in Legs, lower-body and full-body workouts."],
+  ["Plank", "Core · shoulder control", "Used across full-body, calisthenics and core-focused workouts."],
+  ["Walking / cardio", "Heart health · conditioning", "Used in Fat-loss Foundation and cardio days."],
+];
+export function ExercisesView() {
+  const [selected, setSelected] = useState(0);
+  const item = exerciseLibrary[selected];
+  return <><div className="eyebrow">SHARED EXERCISE LIBRARY</div><div className="page-heading"><div><h1>Exercises.</h1><p>One exercise can appear inside multiple mastery paths and custom workouts.</p></div></div><div className="exercise-library"><div>{exerciseLibrary.map((entry, index) => <button className={index === selected ? "active" : ""} key={entry[0]} onClick={() => setSelected(index)}><b>{entry[0]}</b><small>{entry[1]}</small></button>)}</div><section><span>EXERCISE</span><h2>{item[0]}</h2><b>{item[1]}</b><p>{item[2]}</p><aside className="info-banner"><ShieldCheck /><p>Exercise technique, variations and exact prescriptions will be managed here next.</p></aside></section></div></>;
+}
