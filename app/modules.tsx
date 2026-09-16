@@ -114,7 +114,8 @@ export function SettingsView({dark,safeMode,monthCount,onDark,onSafe,onBuildMont
 }
 
 type PlanMode = "template" | "custom";
-type CustomPlan = { id: string; name: string; duration: 1 | 2 | 3; startDate: string; mode: PlanMode; template?: string; schedule: string[][]; createdAt: string };
+export type CustomPlan = { id: string; name: string; duration: 1 | 2 | 3; startDate: string; mode: PlanMode; template?: string; schedule: string[][]; createdAt: string };
+export type PlanExercise = { id: string; name: string; sets: number; repRange: string; rest: string; rir: string; cue: string; mistakes: string; easier: string; harder: string; equipment: string; replacement?: string; safeNote?: string };
 const planTemplates = [
   ["ppl-bodyweight", "Push · Pull · Legs — Bodyweight", "No equipment · strength foundation"],
   ["ppl-dumbbell", "Push · Pull · Legs — Dumbbells", "Dumbbells · balanced strength"],
@@ -125,6 +126,30 @@ const planTemplates = [
 const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const focusOptions = ["Rest / recovery", "Full upper body", "Chest", "Back", "Shoulders", "Arms", "Forearms", "Core", "Full lower body", "Quads", "Hamstrings", "Glutes", "Calves", "Full body", "Cardio", "Stretching"];
 const defaultSchedule = [["Full upper body"], ["Full lower body"], ["Cardio"], ["Back"], ["Chest"], ["Full body"], ["Rest / recovery"]];
+
+const focusExercises: Record<string, PlanExercise[]> = {
+  "Chest": [{id:"push-up",name:"Push-up",sets:3,repRange:"8–15",rest:"75 sec",rir:"2 RIR",cue:"Keep ribs down and body in one line.",mistakes:"Flaring elbows or sagging hips.",easier:"Incline push-up",harder:"Feet-elevated push-up",equipment:"Floor or bench"},{id:"dumbbell-press",name:"Dumbbell floor press",sets:3,repRange:"8–12",rest:"90 sec",rir:"2 RIR",cue:"Press smoothly with shoulders packed.",mistakes:"Bouncing elbows off the floor.",easier:"Lighter dumbbells",harder:"Slow 3-second lower",equipment:"Dumbbells"},{id:"dumbbell-fly",name:"Dumbbell fly",sets:2,repRange:"10–15",rest:"75 sec",rir:"3 RIR",cue:"Keep a soft elbow and controlled stretch.",mistakes:"Going too deep or shrugging.",easier:"Floor fly, smaller range",harder:"Longer lowering phase",equipment:"Dumbbells"}],
+  "Back": [{id:"row",name:"One-arm dumbbell row",sets:3,repRange:"8–12 / side",rest:"75 sec",rir:"2 RIR",cue:"Pull elbow toward hip.",mistakes:"Twisting the torso.",easier:"Supported row",harder:"Pause at the top",equipment:"Dumbbell"},{id:"reverse-fly",name:"Reverse fly",sets:2,repRange:"12–15",rest:"60 sec",rir:"3 RIR",cue:"Move from upper back, neck relaxed.",mistakes:"Shrugging shoulders.",easier:"Lighter dumbbells",harder:"Slow lowering",equipment:"Dumbbells"}],
+  "Shoulders": [{id:"shoulder-press",name:"Dumbbell shoulder press",sets:3,repRange:"8–12",rest:"90 sec",rir:"2 RIR",cue:"Keep ribs stacked over hips.",mistakes:"Overarching the lower back.",easier:"Seated press",harder:"Half-kneeling press",equipment:"Dumbbells"},{id:"lateral-raise",name:"Lateral raise",sets:2,repRange:"12–15",rest:"60 sec",rir:"3 RIR",cue:"Lift smoothly to shoulder height.",mistakes:"Swinging the body.",easier:"One arm at a time",harder:"Pause at the top",equipment:"Dumbbells"}],
+  "Arms": [{id:"curl",name:"Dumbbell curl",sets:3,repRange:"10–15",rest:"60 sec",rir:"2 RIR",cue:"Keep elbows still.",mistakes:"Swinging weight.",easier:"Lighter dumbbells",harder:"Slow lowering",equipment:"Dumbbells"},{id:"triceps-extension",name:"Overhead triceps extension",sets:3,repRange:"10–15",rest:"60 sec",rir:"2 RIR",cue:"Keep upper arms close to head.",mistakes:"Flaring ribs.",easier:"Single dumbbell",harder:"Pause in stretch",equipment:"Dumbbell"}],
+  "Core": [{id:"plank",name:"Forearm plank",sets:3,repRange:"20–40 sec",rest:"45 sec",rir:"Stop before form breaks",cue:"Brace abs and breathe quietly.",mistakes:"Hips sagging or chin poking.",easier:"Knee plank",harder:"Long-lever plank",equipment:"Floor"},{id:"dead-bug",name:"Dead bug",sets:3,repRange:"8–12 / side",rest:"45 sec",rir:"2 RIR",cue:"Keep lower back gently supported.",mistakes:"Rushing the reps.",easier:"Arms only",harder:"Longer lever",equipment:"Floor"}],
+  "Full lower body": [{id:"squat",name:"Goblet squat",sets:3,repRange:"8–15",rest:"90 sec",rir:"2 RIR",cue:"Sit between hips with whole foot down.",mistakes:"Knees collapsing inward.",easier:"Bodyweight box squat",harder:"Slow 3-second lower",equipment:"Dumbbell optional"},{id:"rdl",name:"Dumbbell Romanian deadlift",sets:3,repRange:"8–12",rest:"90 sec",rir:"2 RIR",cue:"Hinge hips back, neutral spine.",mistakes:"Turning it into a squat.",easier:"Bodyweight hip hinge",harder:"Single-leg RDL",equipment:"Dumbbells"}],
+  "Cardio": [{id:"walk",name:"Brisk walk",sets:1,repRange:"20–35 min",rest:"As needed",rir:"Conversational pace",cue:"Walk tall with relaxed shoulders.",mistakes:"Starting too fast.",easier:"Shorter intervals",harder:"Hills or longer duration",equipment:"None"}],
+  "Stretching": [{id:"mobility",name:"Full-body mobility flow",sets:1,repRange:"8–12 min",rest:"Easy breathing",rir:"Comfortable range",cue:"Move slowly; no forced range.",mistakes:"Pushing through pain.",easier:"Shorter range",harder:"Longer holds",equipment:"Mat"}],
+};
+export function getExercisesForFocus(focuses: string[]) {
+  const normalized = focuses.flatMap(focus => focus === "Full upper body" ? ["Chest", "Back", "Shoulders", "Arms"] : focus === "Full body" ? ["Chest", "Back", "Full lower body", "Core"] : focus === "Quads" || focus === "Hamstrings" || focus === "Glutes" || focus === "Calves" ? ["Full lower body"] : [focus]);
+  const seen = new Set<string>();
+  return normalized.flatMap(focus => focusExercises[focus] ?? []).filter(exercise => !seen.has(exercise.id) && !!seen.add(exercise.id)).slice(0, 6);
+}
+export function getPlanForToday(plans: CustomPlan[], date = new Date()) {
+  const today = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const matching = plans.filter(plan => { const start = new Date(`${plan.startDate}T00:00:00`).getTime(); return Number.isFinite(start) && start <= today && today - start < plan.duration * 31 * 86400000; }).sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  if (!matching) return null;
+  const weekdayIndex = (date.getDay() + 6) % 7;
+  const raw = matching.schedule[weekdayIndex] ?? [];
+  return { plan: matching, weekday: weekdays[weekdayIndex], focuses: Array.isArray(raw) ? raw : [raw] };
+}
 
 function usePlans() { return useStored<CustomPlan[]>("lean-created-plans-v1", []); }
 function formatDate(date: string) { return date ? new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T00:00:00`)) : "Start date not set"; }
@@ -145,7 +170,7 @@ export function CreatePlanView({ onCreated }: { onCreated: () => void }) {
   const selectedTemplate = planTemplates.find(item => item[0] === template)!;
   const save = () => {
     const plan: CustomPlan = { id: crypto.randomUUID(), name: name.trim() || (mode === "template" ? selectedTemplate[1] : "My custom training plan"), duration, startDate, mode, template: mode === "template" ? template : undefined, schedule: mode === "template" ? [["Push"], ["Pull"], ["Legs"], ["Recovery"], ["Push"], ["Pull"], ["Rest"]] : schedule, createdAt: new Date().toISOString() };
-    setPlans(current => [plan, ...current]); onCreated();
+    let current: CustomPlan[] = []; try { current = JSON.parse(localStorage.getItem("lean-created-plans-v1") ?? "[]"); } catch {} const next = [plan, ...current]; localStorage.setItem("lean-created-plans-v1", JSON.stringify(next)); setPlans(next); window.dispatchEvent(new Event("lean-plans-changed")); onCreated();
   };
   const addFocus = (dayIndex: number, focus: string) => { if (!focus || schedule[dayIndex].includes(focus)) return; setSchedule(current => current.map((day, index) => index === dayIndex ? [...day, focus] : day)); };
   const removeFocus = (dayIndex: number, focus: string) => setSchedule(current => current.map((day, index) => index === dayIndex ? day.filter(item => item !== focus) : day));
@@ -164,20 +189,27 @@ function PlanDetail({ name, detail, rhythm, onBack }: { name: string; detail: st
   return <><button className="back-button" onClick={onBack}>← Back to library</button><div className="skill-hero"><div><span>PROGRAM OVERVIEW</span><h2>{name}</h2><p>{detail}. Choose this programme when you are ready; exercises and daily prescriptions are added in the next step.</p></div><div><strong>7<small> days</small></strong><span>weekly rhythm</span></div></div><section className="program-week"><div className="section-title"><h2>Weekly rhythm</h2><span>Repeat and progress</span></div>{rhythm.map((focus, index) => <article key={`${focus}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><div><small>{weekdays[index].toUpperCase()}</small><h3>{focus}</h3><p>Exercise choices and progression will appear here.</p></div><ChevronRight /></article>)}</section></>;
 }
 
+function MasteryDetail({ plan, onBack }: { plan: typeof masteryPlans[number]; onBack: () => void }) {
+  const [done, setDone] = useStored<string[]>(`lean-mastery-${plan.id}-v1`, []);
+  const stages = getExercisesForFocus(plan.id === "pushup" ? ["Chest"] : plan.id === "fat-loss" ? ["Full body", "Cardio"] : ["Chest", "Back", "Full lower body", "Core"]);
+  const completed = stages.filter(stage => done.includes(stage.id)).length;
+  return <><button className="back-button" onClick={onBack}>← Back to Mastery</button><section className="skill-hero"><div><span>MASTERY PATH</span><h2>{plan.name}</h2><p>{plan.detail}. Complete each stage in order to unlock the next one.</p></div><div><strong>{completed}<small> / {stages.length}</small></strong><span>steps unlocked</span></div></section><section className="program-week"><div className="section-title"><h2>Build step by step</h2><span>Clean form first</span></div>{stages.map((stage, index) => { const complete = done.includes(stage.id); const locked = index > completed; return <article className={locked ? "locked-step" : ""} key={stage.id}><button className="check" disabled={locked} aria-label={`Mark ${stage.name} complete`} onClick={() => setDone(current => complete ? current.filter(id => id !== stage.id) : [...current, stage.id])}>{complete ? <Check /> : locked ? <LockKeyhole /> : index + 1}</button><div><small>STEP {index + 1} {complete ? "· COMPLETE" : locked ? "· LOCKED" : "· CURRENT"}</small><h3>{stage.name}</h3><p>{stage.sets} sets · {stage.repRange} · {stage.cue}</p></div><ChevronRight /></article>})}</section></>;
+}
+
 export function MasteryView() {
   const [selected, setSelected] = useState<string | null>(null);
   const plan = masteryPlans.find(item => item.id === selected);
-  if (plan) return <PlanDetail {...plan} onBack={() => setSelected(null)} />;
+  if (plan) return <MasteryDetail plan={plan} onBack={() => setSelected(null)} />;
   return <><div className="eyebrow">PRE-BUILT PROGRAMS</div><div className="page-heading"><div><h1>Mastery paths.</h1><p>Choose a proven structure when you want the app to guide the weekly rhythm.</p></div></div><div className="mastery-grid">{masteryPlans.map((item, index) => <button key={item.id} onClick={() => setSelected(item.id)}><span>{String(index + 1).padStart(2, "0")}</span><h2>{item.name}</h2><p>{item.detail}</p><small>Open programme <ChevronRight /></small></button>)}</div></>;
 }
 
 export function WorkoutsView() {
   const [plans] = usePlans();
   const [selected, setSelected] = useState<string | null>(null);
-  const customPlans = plans.filter(plan => plan.mode === "custom");
-  const plan = customPlans.find(item => item.id === selected);
-  if (plan) return <PlanDetail name={plan.name} detail={`Starts ${formatDate(plan.startDate)} · ${plan.duration} month${plan.duration === 1 ? "" : "s"}`} rhythm={plan.schedule.map(day => (Array.isArray(day) ? day : [day]).join(" + "))} onBack={() => setSelected(null)} />;
-  return <><div className="eyebrow">YOUR CUSTOM PROGRAMS</div><div className="page-heading"><div><h1>Workouts.</h1><p>Your own weekly muscle splits live here. One day can carry more than one focus.</p></div></div>{customPlans.length === 0 ? <section className="plans-empty"><Dumbbell /><h2>No custom workout yet.</h2><p>Create a plan, choose “Customize my week,” then add focus tags to each day.</p></section> : <div className="skill-list">{customPlans.map(plan => <article className="skill-step" key={plan.id}><button aria-label={`Open ${plan.name}`} onClick={() => setSelected(plan.id)}><Dumbbell /></button><div><small>STARTS {formatDate(plan.startDate).toUpperCase()}</small><h3>{plan.name}</h3><p>{plan.duration} month{plan.duration === 1 ? "" : "s"} · {plan.schedule.flat().filter(Boolean).slice(0, 4).join(" · ")}</p></div><button className="library-open" onClick={() => setSelected(plan.id)}><ChevronRight /></button></article>)}</div>}</>;
+  const focuses = [...new Set(plans.filter(plan => plan.mode === "custom").flatMap(plan => plan.schedule.flat().map(focus => String(focus))).filter(focus => focus !== "Rest / recovery"))];
+  const exercises = selected ? getExercisesForFocus([selected]) : [];
+  if (selected) return <><button className="back-button" onClick={() => setSelected(null)}>← Back to workouts</button><div className="skill-hero"><div><span>CUSTOM WORKOUT</span><h2>{selected}</h2><p>These exercises are available for this focus. The next build step will let you choose, order and prescribe them inside a plan day.</p></div><div><strong>{exercises.length}<small> moves</small></strong><span>exercise options</span></div></div><section className="program-week"><div className="section-title"><h2>Exercise options</h2><span>Pick later when building the day</span></div>{exercises.length ? exercises.map((exercise, index) => <article key={exercise.id}><span>{String(index + 1).padStart(2, "0")}</span><div><small>{exercise.equipment.toUpperCase()}</small><h3>{exercise.name}</h3><p>{exercise.sets} sets · {exercise.repRange} · {exercise.cue}</p></div><ChevronRight /></article>) : <p className="empty-copy">No exercise list is set for this focus yet.</p>}</section></>;
+  return <><div className="eyebrow">YOUR SELECTED WORKOUT FOCUSES</div><div className="page-heading"><div><h1>Workouts.</h1><p>Every focus tag selected in your custom plans becomes a workout card here.</p></div></div>{focuses.length === 0 ? <section className="plans-empty"><Dumbbell /><h2>No workout focus selected yet.</h2><p>Create a custom plan, then add focus tags such as Chest, Back, Core or Cardio.</p></section> : <div className="mastery-grid">{focuses.map((focus, index) => <button key={focus} onClick={() => setSelected(focus)}><span>{String(index + 1).padStart(2, "0")}</span><h2>{focus}</h2><p>{getExercisesForFocus([focus]).length} available exercise options</p><small>Open workout <ChevronRight /></small></button>)}</div>}</>;
 }
 
 const exerciseLibrary = [
