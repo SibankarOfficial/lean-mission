@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createMonth, type ProgramMonth } from "./fitness-data";
-import { CalculatorView, DietView, ProgressView, PushupView, RecoveryView, SafetyView, SettingsView, SkillsView } from "./modules";
+import { CalculatorView, CreatePlanView, DietView, ProgressView, PushupView, RecoveryView, SafetyView, SettingsView, SkillsView, YourPlansView } from "./modules";
 import { AuthGate, type FitnessProfile, useAuth } from "./auth-gate";
 
 type SetLog = { reps: string; rir: number; tempo: string; variation: string };
@@ -85,7 +85,8 @@ function AppContent() {
           <TabsList orientation="vertical" className="nav-list">
             <TabsTrigger value="dashboard"><Activity /> Dashboard</TabsTrigger>
             <TabsTrigger value="today"><Target /> Today</TabsTrigger>
-            <TabsTrigger value="plan"><Dumbbell /> 30-Day Plan</TabsTrigger>
+            <TabsTrigger value="plans"><Dumbbell /> Your Plans</TabsTrigger>
+            <TabsTrigger value="create-plan"><Sparkles /> Create Plan</TabsTrigger>
             <TabsTrigger value="skills"><Sparkles /> Skills</TabsTrigger>
             <TabsTrigger value="pushups"><TrendingUp /> Push-ups</TabsTrigger>
             <TabsTrigger value="diet"><Utensils /> Diet</TabsTrigger>
@@ -124,7 +125,8 @@ function AppContent() {
               <aside className="daily-log"><h2>Quick log</h2><label>Steps <input type="number" value={log.steps || ""} onChange={e => updateLog({ steps: +e.target.value })} placeholder={String(today.stepTarget)} /></label><label>Water (ml) <input type="number" value={log.water || ""} onChange={e => updateLog({ water: +e.target.value })} placeholder="2500" /></label><div className="quick-water"><button onClick={() => updateLog({ water: log.water + 250 })}>+250</button><button onClick={() => updateLog({ water: log.water + 500 })}>+500</button></div><label>Calories <input type="number" value={log.calories || ""} onChange={e => updateLog({ calories: +e.target.value })} placeholder="1600" /></label><label>Protein (g) <input type="number" value={log.protein || ""} onChange={e => updateLog({ protein: +e.target.value })} placeholder="110" /></label><div className="day-summary"><b>Evening check</b><p>{log.calories||0} kcal · {log.protein||0} g protein</p><p>{log.steps||0} steps · {(log.water/1000).toFixed(1)} L water</p><p>{log.completed.length===today.exercises.length?"Workout complete ✓":"Workout still open"}</p></div></aside></div>
           </TabsContent>
 
-          <TabsContent value="plan"><div className="eyebrow">{activeMonth.name.toUpperCase()} · {activeMonth.phase.toUpperCase()}</div><div className="page-heading"><div><h1>Your 30-day map</h1><p>Volume rises gradually, with recovery and a lighter finish built in.</p></div></div><div className="day-grid">{activeMonth.days.map(day => { const complete = (state.logs[`${activeMonth.id}-${day.day}`]?.completed.length ?? 0) >= day.exercises.length; return <button key={day.day} className={`day-card ${day.day === today.day ? "current" : ""}`} onClick={() => { setState(s => ({ ...s, currentDay: day.day })); setTab("today"); }}><span>DAY {day.day}</span>{complete && <Check />}<h3>{day.type}</h3><p>{day.exercises.length} moves · {day.stepTarget.toLocaleString()} steps</p>{day.checkpoint && <small>Weekly checkpoint</small>}</button>})}</div></TabsContent>
+          <TabsContent value="plans"><YourPlansView onCreate={() => setTab("create-plan")} /></TabsContent>
+          <TabsContent value="create-plan"><CreatePlanView onCreated={() => setTab("plans")} /></TabsContent>
 
           <TabsContent value="skills"><SkillsView/></TabsContent>
           <TabsContent value="pushups"><PushupView/></TabsContent>

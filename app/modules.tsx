@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Calculator, Check, ChevronRight, CircleAlert, Clock3, Droplets, ExternalLink, Flame, Footprints, LockKeyhole, Moon, Plus, RotateCcw, Scale, ShieldCheck, Sparkles, Target, TimerReset, Trash2, TrendingDown, Trophy, Utensils, Waves } from "lucide-react";
+import { CalendarDays, Calculator, Check, ChevronRight, CircleAlert, Clock3, Droplets, Dumbbell, ExternalLink, Flame, Footprints, LockKeyhole, Moon, Plus, RotateCcw, Scale, ShieldCheck, Sparkles, Target, TimerReset, Trash2, TrendingDown, Trophy, Utensils, Waves } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -111,4 +111,41 @@ export function SafetyView() {
 type SettingsProps = { dark: boolean; safeMode: boolean; monthCount: number; onDark: (v:boolean)=>void; onSafe: (v:boolean)=>void; onBuildMonth:()=>void; onReset:()=>void };
 export function SettingsView({dark,safeMode,monthCount,onDark,onSafe,onBuildMonth,onReset}:SettingsProps){
   return <><div className="eyebrow">PROGRAM CONTROL</div><div className="page-heading"><div><h1>Settings & future months.</h1><p>Your plan is local-first and stays on this browser.</p></div></div><div className="settings-grid"><article><div><Moon/><span><h3>Dark mode</h3><p>Use the darker training view.</p></span></div><Switch checked={dark} onCheckedChange={onDark}/></article><article><div><ShieldCheck/><span><h3>Cervical Safe Mode</h3><p>Show cautions and safe replacements.</p></span></div><Switch checked={safeMode} onCheckedChange={onSafe}/></article></div><section className="month-builder"><div><span>NEXT PHASE</span><h2>Build Month {monthCount+1}</h2><p>Creates a fresh 30-day phase from the same Push/Pull/Legs system. It carries the safety rules, raises capacity conservatively, preserves all previous logs, and ends with a deload.</p><ul><li>Same reusable exercise data model</li><li>Progressive sets, leverage and tempo—not weight alone</li><li>Step targets continue from the previous month</li><li>Separate history for every phase</li></ul></div><button className="primary" onClick={onBuildMonth}><Sparkles/> Create Month {monthCount+1}</button></section><section className="danger-zone"><div><h2>Reset all local data</h2><p>Deletes workouts, meals, skills and every generated month from this browser.</p></div><Dialog><DialogTrigger asChild><button><RotateCcw/> Reset program</button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Reset your entire program?</DialogTitle><DialogDescription>This cannot be undone. Your plan returns to Month 1, Day 1.</DialogDescription></DialogHeader><DialogFooter><DialogClose asChild><button className="secondary-button">Cancel</button></DialogClose><DialogClose asChild><button className="danger-button" onClick={onReset}>Yes, reset everything</button></DialogClose></DialogFooter></DialogContent></Dialog></section></>;
+}
+
+type PlanMode = "template" | "custom";
+type CustomPlan = { id: string; name: string; duration: 1 | 2 | 3; startDate: string; mode: PlanMode; template?: string; schedule: string[]; createdAt: string };
+const planTemplates = [
+  ["ppl-bodyweight", "Push · Pull · Legs — Bodyweight", "No equipment · strength foundation"],
+  ["ppl-dumbbell", "Push · Pull · Legs — Dumbbells", "Dumbbells · balanced strength"],
+  ["fat-loss", "Fat-loss foundation", "Strength, steps and cardio"],
+  ["calisthenics", "Calisthenics mastery", "Skills, strength and control"],
+  ["pushup", "Push-up mastery", "Progress toward one high-rep set"],
+] as const;
+const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const focusOptions = ["Rest / recovery", "Full upper body", "Chest", "Back", "Shoulders", "Arms", "Forearms", "Core", "Full lower body", "Quads", "Hamstrings", "Glutes", "Calves", "Full body", "Cardio", "Stretching"];
+const defaultSchedule = ["Full upper body", "Full lower body", "Cardio", "Back", "Chest", "Full body", "Rest / recovery"];
+
+function usePlans() { return useStored<CustomPlan[]>("lean-created-plans-v1", []); }
+function formatDate(date: string) { return date ? new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T00:00:00`)) : "Start date not set"; }
+
+export function YourPlansView({ onCreate }: { onCreate: () => void }) {
+  const [plans, setPlans] = usePlans();
+  return <><div className="eyebrow">YOUR TRAINING LIBRARY</div><div className="page-heading"><div><h1>Your plans.</h1><p>Create up to three months at a time. Each plan starts on the date you choose.</p></div><button className="primary" onClick={onCreate}><Plus /> Create plan</button></div>{plans.length === 0 ? <section className="plans-empty"><Dumbbell /><h2>Your first plan starts here.</h2><p>Choose a proven template or map your own weekly muscle split. Exercises come in the next step.</p><button className="primary" onClick={onCreate}>Create a plan <ChevronRight /></button></section> : <div className="created-plan-list">{plans.map(plan => <article key={plan.id}><div className="plan-card-icon"><CalendarDays /></div><div><span>{plan.mode === "template" ? "PRE-BUILT PLAN" : "CUSTOM WEEKLY SPLIT"}</span><h2>{plan.name}</h2><p>Starts {formatDate(plan.startDate)} · {plan.duration} {plan.duration === 1 ? "month" : "months"}</p><div className="plan-mini-schedule">{plan.schedule.map((focus, i) => <small key={`${plan.id}-${i}`}><b>{weekdays[i].slice(0, 3)}</b>{focus}</small>)}</div></div><button className="delete-plan" aria-label={`Delete ${plan.name}`} onClick={() => setPlans(current => current.filter(item => item.id !== plan.id))}><Trash2 /></button></article>)}</div>}</>;
+}
+
+export function CreatePlanView({ onCreated }: { onCreated: () => void }) {
+  const [, setPlans] = usePlans();
+  const [mode, setMode] = useState<PlanMode>("template");
+  const [duration, setDuration] = useState<1 | 2 | 3>(1);
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [template, setTemplate] = useState<string>(planTemplates[0][0]);
+  const [name, setName] = useState("");
+  const [schedule, setSchedule] = useState(defaultSchedule);
+  const selectedTemplate = planTemplates.find(item => item[0] === template)!;
+  const save = () => {
+    const plan: CustomPlan = { id: crypto.randomUUID(), name: name.trim() || (mode === "template" ? selectedTemplate[1] : "My custom training plan"), duration, startDate, mode, template: mode === "template" ? template : undefined, schedule: mode === "template" ? ["Push", "Pull", "Legs", "Recovery", "Push", "Pull", "Rest"] : schedule, createdAt: new Date().toISOString() };
+    setPlans(current => [plan, ...current]); onCreated();
+  };
+  return <><div className="eyebrow">PLAN BUILDER · STEP 1 OF 2</div><div className="page-heading"><div><h1>Create a training plan.</h1><p>First choose the calendar and weekly structure. We&apos;ll add the exact exercises inside each day next.</p></div></div><section className="plan-builder"><div className="plan-mode-toggle"><button className={mode === "template" ? "active" : ""} onClick={() => setMode("template")}><Sparkles /><span><b>Use a pre-built plan</b><small>Start from a proven structure</small></span></button><button className={mode === "custom" ? "active" : ""} onClick={() => setMode("custom")}><CalendarDays /><span><b>Customize my week</b><small>Choose the muscle focus for every day</small></span></button></div><div className="plan-basics"><label>Plan name <input value={name} onChange={e => setName(e.target.value)} placeholder={mode === "template" ? selectedTemplate[1] : "e.g. My strength block"} /></label><label>Duration <select value={duration} onChange={e => setDuration(+e.target.value as 1 | 2 | 3)}><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option></select></label><label>Start date <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></label></div>{mode === "template" ? <div className="template-picker"><h2>Choose a plan type</h2><p>Each one gives you a ready-made weekly rhythm. You can tune exercises later.</p><div>{planTemplates.map(item => <button key={item[0]} className={template === item[0] ? "selected" : ""} onClick={() => setTemplate(item[0])}><span><b>{item[1]}</b><small>{item[2]}</small></span>{template === item[0] && <Check />}</button>)}</div></div> : <div className="weekly-customizer"><div className="section-title"><div><h2>Build your weekly split</h2><span>Pick one main focus for each day</span></div></div>{weekdays.map((day, index) => <label key={day}><b>{day}</b><select value={schedule[index]} onChange={e => setSchedule(current => current.map((focus, position) => position === index ? e.target.value : focus))}>{focusOptions.map(focus => <option key={focus}>{focus}</option>)}</select></label>)}</div>}<div className="plan-builder-footer"><span><CalendarDays /> Starts {formatDate(startDate)} · {duration} {duration === 1 ? "month" : "months"}</span><button className="primary" onClick={save}>Create plan <ChevronRight /></button></div></section></>;
 }
