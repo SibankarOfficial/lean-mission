@@ -117,15 +117,14 @@ type PlanMode = "template" | "custom";
 export type CustomPlan = { id: string; name: string; duration: 1 | 2 | 3; startDate: string; mode: PlanMode; template?: string; schedule: string[][]; createdAt: string };
 export type PlanExercise = { id: string; name: string; sets: number; repRange: string; rest: string; rir: string; cue: string; mistakes: string; easier: string; harder: string; equipment: string; replacement?: string; safeNote?: string };
 const planTemplates = [
-  ["ppl-bodyweight", "Push · Pull · Legs — Bodyweight", "No equipment · strength foundation"],
-  ["ppl-dumbbell", "Push · Pull · Legs — Dumbbells", "Dumbbells · balanced strength"],
-  ["fat-loss", "Fat-loss foundation", "Strength, steps and cardio"],
-  ["calisthenics", "Calisthenics mastery", "Skills, strength and control"],
-  ["pushup", "Push-up mastery", "Progress toward one high-rep set"],
+  ["ppl", "Push · Pull · Legs", "Three workouts distributed across the week"],
+  ["fat-loss", "Fat-loss plan", "Strength, steps and bodyweight cardio"],
+  ["muscle-gain", "Muscle-gain plan", "Dumbbell and bodyweight strength"],
 ] as const;
 const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const focusOptions = ["Rest / recovery", "Full upper body", "Chest", "Back", "Shoulders", "Arms", "Forearms", "Core", "Full lower body", "Quads", "Hamstrings", "Glutes", "Calves", "Full body", "Cardio", "Stretching"];
 const defaultSchedule = [["Full upper body"], ["Full lower body"], ["Cardio"], ["Back"], ["Chest"], ["Full body"], ["Rest / recovery"]];
+const preplanSchedules: Record<string, string[][]> = { ppl: [["Push"], ["Pull"], ["Legs"], ["Rest / recovery"], ["Push"], ["Pull"], ["Legs"]], "fat-loss": [["Full body"], ["Cardio"], ["Full upper body"], ["Cardio"], ["Full lower body"], ["Cardio"], ["Rest / recovery"]], "muscle-gain": [["Push"], ["Pull"], ["Legs"], ["Rest / recovery"], ["Full upper body"], ["Full lower body"], ["Rest / recovery"]] };
 
 const focusExercises: Record<string, PlanExercise[]> = {
   "Chest": [{id:"push-up",name:"Push-up",sets:3,repRange:"8–15",rest:"75 sec",rir:"2 RIR",cue:"Keep ribs down and body in one line.",mistakes:"Flaring elbows or sagging hips.",easier:"Incline push-up",harder:"Feet-elevated push-up",equipment:"Floor or bench"},{id:"dumbbell-press",name:"Dumbbell floor press",sets:3,repRange:"8–12",rest:"90 sec",rir:"2 RIR",cue:"Press smoothly with shoulders packed.",mistakes:"Bouncing elbows off the floor.",easier:"Lighter dumbbells",harder:"Slow 3-second lower",equipment:"Dumbbells"},{id:"dumbbell-fly",name:"Dumbbell fly",sets:2,repRange:"10–15",rest:"75 sec",rir:"3 RIR",cue:"Keep a soft elbow and controlled stretch.",mistakes:"Going too deep or shrugging.",easier:"Floor fly, smaller range",harder:"Longer lowering phase",equipment:"Dumbbells"}],
@@ -138,9 +137,9 @@ const focusExercises: Record<string, PlanExercise[]> = {
   "Stretching": [{id:"mobility",name:"Full-body mobility flow",sets:1,repRange:"8–12 min",rest:"Easy breathing",rir:"Comfortable range",cue:"Move slowly; no forced range.",mistakes:"Pushing through pain.",easier:"Shorter range",harder:"Longer holds",equipment:"Mat"}],
 };
 export function getExercisesForFocus(focuses: string[]) {
-  const normalized = focuses.flatMap(focus => focus === "Full upper body" ? ["Chest", "Back", "Shoulders", "Arms"] : focus === "Full body" ? ["Chest", "Back", "Full lower body", "Core"] : focus === "Quads" || focus === "Hamstrings" || focus === "Glutes" || focus === "Calves" ? ["Full lower body"] : [focus]);
+  const normalized = focuses.flatMap(focus => focus === "Push" ? ["Chest", "Shoulders", "Arms"] : focus === "Pull" ? ["Back", "Forearms", "Arms"] : focus === "Legs" ? ["Full lower body", "Core"] : focus === "Full upper body" ? ["Chest", "Back", "Shoulders", "Arms"] : focus === "Full body" ? ["Chest", "Back", "Full lower body", "Core"] : focus === "Quads" || focus === "Hamstrings" || focus === "Glutes" || focus === "Calves" ? ["Full lower body"] : [focus]);
   const seen = new Set<string>();
-  return normalized.flatMap(focus => focusExercises[focus] ?? []).filter(exercise => !seen.has(exercise.id) && !!seen.add(exercise.id)).slice(0, 6);
+  return normalized.flatMap(focus => exerciseCatalog.filter(exercise => exercise.focuses.includes(focus))).filter(exercise => !seen.has(exercise.id) && !!seen.add(exercise.id)).slice(0, 6);
 }
 export function getPlanForToday(plans: CustomPlan[], date = new Date()) {
   const today = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
@@ -150,6 +149,34 @@ export function getPlanForToday(plans: CustomPlan[], date = new Date()) {
   const raw = matching.schedule[weekdayIndex] ?? [];
   return { plan: matching, weekday: weekdays[weekdayIndex], focuses: Array.isArray(raw) ? raw : [raw] };
 }
+
+type ExerciseEntry = PlanExercise & { focuses: string[]; videoPlaceholder: string };
+const extraExercise = (id: string, name: string, focuses: string[], equipment: string, cue: string): ExerciseEntry => ({ id, name, focuses, equipment, sets: 3, repRange: "8–15", rest: "60–90 sec", rir: "2–3 RIR", cue, mistakes: "Rushing the rep or losing a stable body position.", easier: "Use less range, lighter dumbbells, or an easier bodyweight variation.", harder: "Slow the lowering phase or add a controlled pause.", videoPlaceholder: "YouTube technique video — link to be added" });
+const exerciseCatalog: ExerciseEntry[] = [
+  ...Object.entries(focusExercises).flatMap(([focus, exercises]) => exercises.map(exercise => ({ ...exercise, focuses: [focus], videoPlaceholder: "YouTube technique video — link to be added" }))),
+  extraExercise("incline-push-up", "Incline push-up", ["Chest"], "Bodyweight", "Hands elevated; keep your body in one straight line."),
+  extraExercise("diamond-push-up", "Diamond push-up", ["Chest", "Arms"], "Bodyweight", "Keep hands close under the chest; control the elbows."),
+  extraExercise("pike-push-up", "Pike push-up", ["Shoulders"], "Bodyweight", "Hips high; lower the crown toward the floor without collapsing."),
+  extraExercise("front-raise", "Dumbbell front raise", ["Shoulders"], "Dumbbells", "Raise with soft elbows and a steady torso."),
+  extraExercise("rear-delt-fly", "Dumbbell rear-delt fly", ["Shoulders", "Back"], "Dumbbells", "Hinge lightly and sweep arms wide without shrugging."),
+  extraExercise("hammer-curl", "Hammer curl", ["Arms", "Forearms"], "Dumbbells", "Keep palms facing in and elbows near the ribs."),
+  extraExercise("triceps-kickback", "Dumbbell triceps kickback", ["Arms"], "Dumbbells", "Hold upper arm still and fully extend the elbow."),
+  extraExercise("wrist-curl", "Dumbbell wrist curl", ["Forearms"], "Dumbbells", "Move only at the wrist with the forearm supported."),
+  extraExercise("reverse-wrist-curl", "Reverse wrist curl", ["Forearms"], "Dumbbells", "Use a small controlled range with palms down."),
+  extraExercise("bodyweight-squat", "Bodyweight squat", ["Full lower body", "Quads"], "Bodyweight", "Keep whole foot grounded and knees tracking comfortably."),
+  extraExercise("reverse-lunge", "Reverse lunge", ["Full lower body", "Quads", "Glutes"], "Bodyweight or dumbbells", "Step back softly and keep front knee stable."),
+  extraExercise("glute-bridge", "Glute bridge", ["Full lower body", "Glutes"], "Bodyweight or dumbbell", "Drive through heels and pause when hips are level."),
+  extraExercise("calf-raise", "Standing calf raise", ["Full lower body", "Calves"], "Bodyweight or dumbbells", "Pause at the top and lower fully with control."),
+  extraExercise("wall-sit", "Wall sit", ["Full lower body", "Quads"], "Bodyweight", "Keep back supported and knees comfortable."),
+  extraExercise("superman", "Prone Superman hold", ["Back"], "Bodyweight", "Lift gently from upper back and glutes; keep neck long."),
+  extraExercise("bird-dog", "Bird dog", ["Core", "Back"], "Bodyweight", "Reach long without twisting the hips."),
+  extraExercise("mountain-climber", "Mountain climber", ["Core", "Cardio"], "Bodyweight", "Keep shoulders over hands and move under control."),
+  extraExercise("bear-crawl", "Bear crawl", ["Core", "Full body"], "Bodyweight", "Keep knees low and take slow, quiet steps."),
+  extraExercise("jumping-jack", "Jumping jack", ["Cardio"], "Bodyweight", "Land softly and maintain a relaxed rhythm."),
+  extraExercise("high-knees", "High knees", ["Cardio"], "Bodyweight", "Stay tall and use a pace you can control."),
+  extraExercise("burpee", "Step-back burpee", ["Cardio", "Full body"], "Bodyweight", "Step back instead of jumping if impact is uncomfortable."),
+  extraExercise("suitcase-carry", "Dumbbell suitcase carry", ["Core", "Forearms"], "Dumbbell", "Stand tall and resist leaning toward the weight."),
+];
 
 function usePlans() { return useStored<CustomPlan[]>("lean-created-plans-v1", []); }
 function formatDate(date: string) { return date ? new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T00:00:00`)) : "Start date not set"; }
@@ -169,7 +196,7 @@ export function CreatePlanView({ onCreated }: { onCreated: () => void }) {
   const [schedule, setSchedule] = useState(defaultSchedule);
   const selectedTemplate = planTemplates.find(item => item[0] === template)!;
   const save = () => {
-    const plan: CustomPlan = { id: crypto.randomUUID(), name: name.trim() || (mode === "template" ? selectedTemplate[1] : "My custom training plan"), duration, startDate, mode, template: mode === "template" ? template : undefined, schedule: mode === "template" ? [["Push"], ["Pull"], ["Legs"], ["Recovery"], ["Push"], ["Pull"], ["Rest"]] : schedule, createdAt: new Date().toISOString() };
+    const plan: CustomPlan = { id: crypto.randomUUID(), name: name.trim() || (mode === "template" ? selectedTemplate[1] : "My custom training plan"), duration, startDate, mode, template: mode === "template" ? template : undefined, schedule: mode === "template" ? preplanSchedules[template] : schedule, createdAt: new Date().toISOString() };
     let current: CustomPlan[] = []; try { current = JSON.parse(localStorage.getItem("lean-created-plans-v1") ?? "[]"); } catch {} const next = [plan, ...current]; localStorage.setItem("lean-created-plans-v1", JSON.stringify(next)); setPlans(next); window.dispatchEvent(new Event("lean-plans-changed")); onCreated();
   };
   const addFocus = (dayIndex: number, focus: string) => { if (!focus || schedule[dayIndex].includes(focus)) return; setSchedule(current => current.map((day, index) => index === dayIndex ? [...day, focus] : day)); };
@@ -206,7 +233,7 @@ export function MasteryView() {
 export function WorkoutsView() {
   const [plans] = usePlans();
   const [selected, setSelected] = useState<string | null>(null);
-  const focuses = [...new Set(plans.filter(plan => plan.mode === "custom").flatMap(plan => plan.schedule.flat().map(focus => String(focus))).filter(focus => focus !== "Rest / recovery"))];
+  const focuses = [...new Set(["Push", "Pull", "Legs", ...plans.flatMap(plan => plan.schedule.flat().map(focus => String(focus))).filter(focus => focus !== "Rest / recovery")])];
   const exercises = selected ? getExercisesForFocus([selected]) : [];
   if (selected) return <><button className="back-button" onClick={() => setSelected(null)}>← Back to workouts</button><div className="skill-hero"><div><span>CUSTOM WORKOUT</span><h2>{selected}</h2><p>These exercises are available for this focus. The next build step will let you choose, order and prescribe them inside a plan day.</p></div><div><strong>{exercises.length}<small> moves</small></strong><span>exercise options</span></div></div><section className="program-week"><div className="section-title"><h2>Exercise options</h2><span>Pick later when building the day</span></div>{exercises.length ? exercises.map((exercise, index) => <article key={exercise.id}><span>{String(index + 1).padStart(2, "0")}</span><div><small>{exercise.equipment.toUpperCase()}</small><h3>{exercise.name}</h3><p>{exercise.sets} sets · {exercise.repRange} · {exercise.cue}</p></div><ChevronRight /></article>) : <p className="empty-copy">No exercise list is set for this focus yet.</p>}</section></>;
   return <><div className="eyebrow">YOUR SELECTED WORKOUT FOCUSES</div><div className="page-heading"><div><h1>Workouts.</h1><p>Every focus tag selected in your custom plans becomes a workout card here.</p></div></div>{focuses.length === 0 ? <section className="plans-empty"><Dumbbell /><h2>No workout focus selected yet.</h2><p>Create a custom plan, then add focus tags such as Chest, Back, Core or Cardio.</p></section> : <div className="mastery-grid">{focuses.map((focus, index) => <button key={focus} onClick={() => setSelected(focus)}><span>{String(index + 1).padStart(2, "0")}</span><h2>{focus}</h2><p>{getExercisesForFocus([focus]).length} available exercise options</p><small>Open workout <ChevronRight /></small></button>)}</div>}</>;
@@ -220,7 +247,10 @@ const exerciseLibrary = [
   ["Walking / cardio", "Heart health · conditioning", "Used in Fat-loss Foundation and cardio days."],
 ];
 export function ExercisesView() {
-  const [selected, setSelected] = useState(0);
-  const item = exerciseLibrary[selected];
-  return <><div className="eyebrow">SHARED EXERCISE LIBRARY</div><div className="page-heading"><div><h1>Exercises.</h1><p>One exercise can appear inside multiple mastery paths and custom workouts.</p></div></div><div className="exercise-library"><div>{exerciseLibrary.map((entry, index) => <button className={index === selected ? "active" : ""} key={entry[0]} onClick={() => setSelected(index)}><b>{entry[0]}</b><small>{entry[1]}</small></button>)}</div><section><span>EXERCISE</span><h2>{item[0]}</h2><b>{item[1]}</b><p>{item[2]}</p><aside className="info-banner"><ShieldCheck /><p>Exercise technique, variations and exact prescriptions will be managed here next.</p></aside></section></div></>;
+  const [selectedFocus, setSelectedFocus] = useState("All");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const focuses = ["All", ...focusOptions.filter(focus => focus !== "Rest / recovery")];
+  const visible = selectedFocus === "All" ? exerciseCatalog : exerciseCatalog.filter(exercise => exercise.focuses.includes(selectedFocus) || (selectedFocus === "Full upper body" && exercise.focuses.some(focus => ["Chest", "Back", "Shoulders", "Arms"].includes(focus))) || (selectedFocus === "Full body" && exercise.focuses.some(focus => ["Chest", "Back", "Full lower body", "Core"].includes(focus))));
+  const selected = exerciseCatalog.find(exercise => exercise.id === selectedId);
+  return <><div className="eyebrow">BODYWEIGHT + DUMBBELL EXERCISE LIBRARY</div><div className="page-heading"><div><h1>Exercises.</h1><p>These are the building blocks. Workouts combine exercises; pre-plans distribute workouts across the week.</p></div></div><div className="exercise-filter" role="tablist" aria-label="Exercise focus">{focuses.map(focus => <button key={focus} className={selectedFocus === focus ? "active" : ""} onClick={() => setSelectedFocus(focus)}>{focus}</button>)}</div><div className="exercise-card-grid">{visible.map(exercise => <article className="exercise-library-card" key={exercise.id}><div><span>{exercise.equipment}</span><h2>{exercise.name}</h2><p>{exercise.focuses.join(" · ")}</p></div><button onClick={() => setSelectedId(exercise.id)}>Technique <ChevronRight /></button></article>)}</div><Dialog open={!!selected} onOpenChange={open => !open && setSelectedId(null)}>{selected && <DialogContent className="exercise-modal"><DialogHeader><span className="exercise-modal-kicker">{selected.equipment} · {selected.focuses.join(" · ")}</span><DialogTitle>{selected.name}</DialogTitle><DialogDescription>{selected.cue}</DialogDescription></DialogHeader><div className="technique-details"><section><b>How to do it</b><p>{selected.cue}</p></section><section><b>Common mistake</b><p>{selected.mistakes}</p></section><section><b>Make it easier</b><p>{selected.easier}</p></section><section><b>Progress it</b><p>{selected.harder}</p></section></div><div className="video-placeholder"><ExternalLink /><div><b>{selected.videoPlaceholder}</b><small>You can add the verified YouTube URL later.</small></div></div><DialogFooter><DialogClose asChild><button className="secondary-button">Close</button></DialogClose></DialogFooter></DialogContent>}</Dialog></>;
 }
