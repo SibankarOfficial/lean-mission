@@ -56,7 +56,7 @@ function AppContent() {
   const today = activeMonth.days[Math.min(state.currentDay - 1, 29)];
   const calendarDay = getPlanForToday(calendarPlans);
   const plannedFocuses = calendarDay?.focuses ?? [today.type];
-  const plannedExercises = calendarDay ? getExercisesForFocus(plannedFocuses) : today.exercises;
+  const plannedExercises = calendarDay ? getExercisesForFocus(plannedFocuses, calendarDay.plan.level ?? "beginner") : today.exercises;
   const displayWorkout = plannedFocuses.join(" + ");
   const key = `${activeMonth.id}-${today.day}`;
   const log = state.logs[key] ?? emptyLog();
