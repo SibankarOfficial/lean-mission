@@ -137,9 +137,10 @@ const focusExercises: Record<string, PlanExercise[]> = {
   "Stretching": [{id:"mobility",name:"Full-body mobility flow",sets:1,repRange:"8–12 min",rest:"Easy breathing",rir:"Comfortable range",cue:"Move slowly; no forced range.",mistakes:"Pushing through pain.",easier:"Shorter range",harder:"Longer holds",equipment:"Mat"}],
 };
 export function getExercisesForFocus(focuses: string[]) {
+  if (focuses.includes("Push")) return pushWorkoutIds.map(id => exerciseCatalog.find(exercise => exercise.id === id)!).filter(Boolean);
   const normalized = focuses.flatMap(focus => focus === "Push" ? ["Chest", "Shoulders", "Arms"] : focus === "Pull" ? ["Back", "Forearms", "Arms"] : focus === "Legs" ? ["Full lower body", "Core"] : focus === "Full upper body" ? ["Chest", "Back", "Shoulders", "Arms"] : focus === "Full body" ? ["Chest", "Back", "Full lower body", "Core"] : focus === "Quads" || focus === "Hamstrings" || focus === "Glutes" || focus === "Calves" ? ["Full lower body"] : [focus]);
   const seen = new Set<string>();
-  return normalized.flatMap(focus => exerciseCatalog.filter(exercise => exercise.focuses.includes(focus))).filter(exercise => !seen.has(exercise.id) && !!seen.add(exercise.id)).slice(0, 6);
+  return normalized.flatMap(focus => exerciseCatalog.filter(exercise => exercise.focuses.includes(focus))).filter(exercise => !seen.has(exercise.id) && !!seen.add(exercise.id)).slice(0, focuses.includes("Stretching") ? 9 : 6);
 }
 export function getPlanForToday(plans: CustomPlan[], date = new Date()) {
   const today = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
@@ -155,6 +156,11 @@ const extraExercise = (id: string, name: string, focuses: string[], equipment: s
 const exerciseCatalog: ExerciseEntry[] = [
   ...Object.entries(focusExercises).flatMap(([focus, exercises]) => exercises.map(exercise => ({ ...exercise, focuses: [focus], videoPlaceholder: "YouTube technique video — link to be added" }))),
   extraExercise("incline-push-up", "Incline push-up", ["Chest"], "Bodyweight", "Hands elevated; keep your body in one straight line."),
+  extraExercise("incline-db-press", "Incline dumbbell press", ["Chest"], "Dumbbells", "Press up and slightly in while keeping shoulders down and back."),
+  extraExercise("flat-db-press", "Flat dumbbell press", ["Chest"], "Dumbbells", "Lower with control and press from a stable shoulder position."),
+  extraExercise("close-grip-db-press", "Close-grip dumbbell press", ["Chest", "Arms"], "Dumbbells", "Keep dumbbells close together and elbows controlled by the ribs."),
+  extraExercise("incline-db-fly", "Incline dumbbell fly", ["Chest"], "Dumbbells", "Use a soft elbow and stop the stretch before shoulders roll forward."),
+  extraExercise("overhead-db-extension", "Overhead dumbbell triceps extension", ["Arms"], "Dumbbell", "Keep elbows pointing forward and ribs stacked."),
   extraExercise("diamond-push-up", "Diamond push-up", ["Chest", "Arms"], "Bodyweight", "Keep hands close under the chest; control the elbows."),
   extraExercise("pike-push-up", "Pike push-up", ["Shoulders"], "Bodyweight", "Hips high; lower the crown toward the floor without collapsing."),
   extraExercise("front-raise", "Dumbbell front raise", ["Shoulders"], "Dumbbells", "Raise with soft elbows and a steady torso."),
@@ -176,7 +182,17 @@ const exerciseCatalog: ExerciseEntry[] = [
   extraExercise("high-knees", "High knees", ["Cardio"], "Bodyweight", "Stay tall and use a pace you can control."),
   extraExercise("burpee", "Step-back burpee", ["Cardio", "Full body"], "Bodyweight", "Step back instead of jumping if impact is uncomfortable."),
   extraExercise("suitcase-carry", "Dumbbell suitcase carry", ["Core", "Forearms"], "Dumbbell", "Stand tall and resist leaning toward the weight."),
+  extraExercise("cobra-pose", "Cobra pose", ["Stretching"], "Bodyweight", "Lift the chest gently with shoulders relaxed; stop before neck compression."),
+  extraExercise("child-pose", "Child’s pose", ["Stretching"], "Bodyweight", "Reach forward comfortably and breathe into the ribs."),
+  extraExercise("cat-cow", "Cat–cow", ["Stretching"], "Bodyweight", "Move smoothly through the spine without throwing the head back."),
+  extraExercise("worlds-greatest-stretch", "World’s Greatest Stretch", ["Stretching"], "Bodyweight", "Use a controlled lunge and rotate through the upper back."),
+  extraExercise("butterfly-stretch", "Butterfly stretch", ["Stretching"], "Bodyweight", "Sit tall and let knees lower without forcing them."),
+  extraExercise("hip-rotation", "90/90 hip rotation", ["Stretching"], "Bodyweight", "Rotate hips slowly while keeping the movement comfortable."),
+  extraExercise("open-book", "Open-book thoracic rotation", ["Stretching"], "Bodyweight", "Keep knees stacked and rotate through the upper back."),
+  extraExercise("wall-slide", "Wall slide", ["Stretching"], "Bodyweight", "Slide forearms upward without shrugging or pushing the chin forward."),
+  extraExercise("chin-tuck", "Gentle chin tuck", ["Stretching"], "Bodyweight", "Make a small, pain-free nod; do not force your neck range."),
 ];
+const pushWorkoutIds = ["incline-db-press", "flat-db-press", "close-grip-db-press", "incline-db-fly", "lateral-raise", "overhead-db-extension"];
 
 function usePlans() { return useStored<CustomPlan[]>("lean-created-plans-v1", []); }
 function formatDate(date: string) { return date ? new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T00:00:00`)) : "Start date not set"; }
